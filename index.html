@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SensAI Flow</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    label { display: block; font-size: 13px; color: #666; margin: 16px 0 4px; }
+    select, input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    button { margin-top: 20px; width: 100%; padding: 12px; background: #333; color: white;
+             border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
+    button:disabled { background: #999; }
+    #output { margin-top: 24px; white-space: pre-wrap; line-height: 1.7;
+              background: #f9f9f9; padding: 20px; border-radius: 8px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>🌸 SensAI Flow</h1>
+  <p>Your anime yoga guide awaits.</p>
+
+  <label>Choose your sensei</label>
+  <select id="persona">
+    <option value="wise_sensei">Wise Sensei</option>
+    <option value="hype_coach">Hype Coach</option>
+    <option value="mysterious_guide">Mysterious Guide</option>
+    <option value="gentle_healer">Gentle Healer</option>
+  </select>
+
+  <label>How are you feeling right now?</label>
+  <input id="mood" type="text" placeholder="e.g. tired, anxious, energized, stiff..." />
+
+  <label>Session goal</label>
+  <select id="goal">
+    <option>stress relief</option>
+    <option>flexibility</option>
+    <option>morning wake-up</option>
+    <option>bedtime wind-down</option>
+    <option>strength and balance</option>
+  </select>
+
+  <label>Duration (minutes)</label>
+  <select id="duration">
+    <option value="15">15 min</option>
+    <option value="30" selected>30 min</option>
+    <option value="45">45 min</option>
+  </select>
+
+  <button id="btn" onclick="generateFlow()">Generate My Flow ✨</button>
+  <div id="output"></div>
+
+  <script>
+    const LAMBDA_URL = "https://b75y4mej5dxirs72mpu2zki5pu0pvcza.lambda-url.us-east-1.on.aws/";
+
+    async function generateFlow() {
+      const btn = document.getElementById("btn");
+      const output = document.getElementById("output");
+      btn.disabled = true;
+      btn.textContent = "Summoning your sensei...";
+      output.textContent = "";
+
+      const payload = {
+        persona:  document.getElementById("persona").value,
+        mood:     document.getElementById("mood").value || "neutral",
+        goal:     document.getElementById("goal").value,
+        duration: document.getElementById("duration").value,
+      };
+
+      try {
+        const res = await fetch(LAMBDA_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        output.textContent = data.flow || data.error;
+      } catch (err) {
+        output.textContent = "Error: " + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate My Flow ✨";
+      }
+    }
+  </script>
+</body>
+</html>

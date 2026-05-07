@@ -1,0 +1,290 @@
+
+<style>
+:root { --tab-active: var(--color-text-primary); }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-mono); font-size: 13px; }
+
+.tabs { display: flex; gap: 4px; padding: 1rem 0 0; border-bottom: 0.5px solid var(--color-border-tertiary); margin-bottom: 0; }
+.tab { padding: 8px 16px; font-size: 13px; font-family: var(--font-sans); color: var(--color-text-secondary); cursor: pointer; border: 0.5px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; background: none; transition: all 0.15s; }
+.tab.active { color: var(--color-text-primary); background: var(--color-background-primary); border-color: var(--color-border-tertiary); border-bottom: 1px solid var(--color-background-primary); margin-bottom: -0.5px; }
+.tab:hover:not(.active) { color: var(--color-text-primary); }
+
+.file-panel { display: none; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-tertiary); border-top: none; border-radius: 0 0 8px 8px; }
+.file-panel.active { display: block; }
+
+.file-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 0.5px solid var(--color-border-tertiary); background: var(--color-background-primary); }
+.file-name { font-family: var(--font-mono); font-size: 12px; color: var(--color-text-secondary); }
+.copy-btn { font-family: var(--font-sans); font-size: 12px; padding: 4px 12px; cursor: pointer; border-radius: 6px; background: none; border: 0.5px solid var(--color-border-secondary); color: var(--color-text-secondary); transition: all 0.15s; }
+.copy-btn:hover { background: var(--color-background-secondary); color: var(--color-text-primary); }
+.copy-btn.copied { color: var(--color-text-success); border-color: var(--color-border-success); }
+
+pre { padding: 1.25rem 1.5rem; overflow-x: auto; line-height: 1.6; color: var(--color-text-primary); white-space: pre; font-size: 12.5px; }
+
+.note { margin: 1rem 0 0; padding: 12px 16px; background: var(--color-background-info); border-radius: 8px; border: 0.5px solid var(--color-border-info); font-family: var(--font-sans); font-size: 13px; color: var(--color-text-info); line-height: 1.6; }
+</style>
+
+<h2 class="sr-only">SensAI Flow — Lambda function and frontend starter code</h2>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('lambda')">lambda_function.py</button>
+  <button class="tab" onclick="switchTab('frontend')">index.html</button>
+  <button class="tab" onclick="switchTab('setup')">setup_steps.sh</button>
+</div>
+
+<div class="file-panel active" id="panel-lambda">
+  <div class="file-header">
+    <span class="file-name">lambda_function.py</span>
+    <button class="copy-btn" onclick="copyCode('lambda')">Copy</button>
+  </div>
+  <pre id="code-lambda">import json
+import boto3
+
+bedrock = boto3.client("bedrock-runtime", region_name="us-east-1")
+
+PERSONAS = {
+    "wise_sensei": (
+        "You are a wise, calm yoga sensei. Speak with warmth and quiet wisdom. "
+        "Use gentle metaphors from nature and ancient teachings. "
+        "Your tone is unhurried, peaceful, and deeply encouraging."
+    ),
+    "hype_coach": (
+        "You are an intense, high-energy anime hype coach. "
+        "You believe every yoga session is a training arc. "
+        "Speak with fire and passion — every pose is a power-up!"
+    ),
+    "mysterious_guide": (
+        "You are a mysterious, cool anime guide. Speak minimally but meaningfully. "
+        "Every word carries weight. You are like Kakashi — calm, cryptic, legendary."
+    ),
+    "gentle_healer": (
+        "You are a soft, nurturing healer. Your voice is like warm light. "
+        "You celebrate every small effort. No rush, no judgment — only kindness."
+    ),
+}
+
+def build_prompt(persona_key, mood, goal, duration):
+    persona_desc = PERSONAS.get(persona_key, PERSONAS["wise_sensei"])
+    return f"""
+{persona_desc}
+
+A student has come to you for a yoga session with the following details:
+- Current mood / energy level: {mood}
+- Session goal: {goal}
+- Duration: {duration} minutes
+
+Generate a complete, personalized yoga flow. Structure it like this:
+
+1. Opening message (2-3 sentences in your persona's voice)
+2. Warm-up poses (2-3 poses)
+3. Main flow poses (4-6 poses, suited to the goal)
+4. Cool-down poses (2-3 poses)
+5. Final relaxation (savasana or breathing exercise)
+6. Closing message (1-2 sentences)
+
+For each pose include:
+- Pose name (English and Sanskrit)
+- How long to hold it
+- A breathing cue
+- A short motivational note in your persona's voice
+
+Keep the total session within {duration} minutes.
+"""
+
+def lambda_handler(event, context):
+    try:
+        body = json.loads(event.get("body", "{}"))
+        persona  = body.get("persona",  "wise_sensei")
+        mood     = body.get("mood",     "neutral")
+        goal     = body.get("goal",     "stress relief")
+        duration = body.get("duration", 20)
+
+        prompt = build_prompt(persona, mood, goal, duration)
+
+        response = bedrock.invoke_model(
+            modelId="anthropic.claude-3-5-sonnet-20241022-v2:0",
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 2048,
+                "messages": [{"role": "user", "content": prompt}],
+            }),
+        )
+
+        result = json.loads(response["body"].read())
+        flow_text = result["content"][0]["text"]
+
+        return {
+            "statusCode": 200,
+            "headers": {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "*",
+            },
+            "body": json.dumps({"flow": flow_text}),
+        }
+
+    except Exception as e:
+        return {
+            "statusCode": 500,
+            "headers": {"Access-Control-Allow-Origin": "*"},
+            "body": json.dumps({"error": str(e)}),
+        }</pre>
+</div>
+
+<div class="file-panel" id="panel-frontend">
+  <div class="file-header">
+    <span class="file-name">index.html</span>
+    <button class="copy-btn" onclick="copyCode('frontend')">Copy</button>
+  </div>
+  <pre id="code-frontend">&lt;!DOCTYPE html&gt;
+&lt;html lang="en"&gt;
+&lt;head&gt;
+  &lt;meta charset="UTF-8"&gt;
+  &lt;title&gt;SensAI Flow&lt;/title&gt;
+  &lt;style&gt;
+    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    label { display: block; font-size: 13px; color: #666; margin: 16px 0 4px; }
+    select, input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    button { margin-top: 20px; width: 100%; padding: 12px; background: #333; color: white;
+             border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
+    button:disabled { background: #999; }
+    #output { margin-top: 24px; white-space: pre-wrap; line-height: 1.7;
+              background: #f9f9f9; padding: 20px; border-radius: 8px; font-size: 14px; }
+  &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;🌸 SensAI Flow&lt;/h1&gt;
+  &lt;p&gt;Your anime yoga guide awaits.&lt;/p&gt;
+
+  &lt;label&gt;Choose your sensei&lt;/label&gt;
+  &lt;select id="persona"&gt;
+    &lt;option value="wise_sensei"&gt;Wise Sensei&lt;/option&gt;
+    &lt;option value="hype_coach"&gt;Hype Coach&lt;/option&gt;
+    &lt;option value="mysterious_guide"&gt;Mysterious Guide&lt;/option&gt;
+    &lt;option value="gentle_healer"&gt;Gentle Healer&lt;/option&gt;
+  &lt;/select&gt;
+
+  &lt;label&gt;How are you feeling right now?&lt;/label&gt;
+  &lt;input id="mood" type="text" placeholder="e.g. tired, anxious, energized, stiff..." /&gt;
+
+  &lt;label&gt;Session goal&lt;/label&gt;
+  &lt;select id="goal"&gt;
+    &lt;option&gt;stress relief&lt;/option&gt;
+    &lt;option&gt;flexibility&lt;/option&gt;
+    &lt;option&gt;morning wake-up&lt;/option&gt;
+    &lt;option&gt;bedtime wind-down&lt;/option&gt;
+    &lt;option&gt;strength and balance&lt;/option&gt;
+  &lt;/select&gt;
+
+  &lt;label&gt;Duration (minutes)&lt;/label&gt;
+  &lt;select id="duration"&gt;
+    &lt;option value="15"&gt;15 min&lt;/option&gt;
+    &lt;option value="30" selected&gt;30 min&lt;/option&gt;
+    &lt;option value="45"&gt;45 min&lt;/option&gt;
+  &lt;/select&gt;
+
+  &lt;button id="btn" onclick="generateFlow()"&gt;Generate My Flow ✨&lt;/button&gt;
+  &lt;div id="output"&gt;&lt;/div&gt;
+
+  &lt;script&gt;
+    const LAMBDA_URL = "YOUR_LAMBDA_FUNCTION_URL_HERE";
+
+    async function generateFlow() {
+      const btn = document.getElementById("btn");
+      const output = document.getElementById("output");
+      btn.disabled = true;
+      btn.textContent = "Summoning your sensei...";
+      output.textContent = "";
+
+      const payload = {
+        persona:  document.getElementById("persona").value,
+        mood:     document.getElementById("mood").value || "neutral",
+        goal:     document.getElementById("goal").value,
+        duration: document.getElementById("duration").value,
+      };
+
+      try {
+        const res = await fetch(LAMBDA_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const data = await res.json();
+        output.textContent = data.flow || data.error;
+      } catch (err) {
+        output.textContent = "Error: " + err.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Generate My Flow ✨";
+      }
+    }
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+</div>
+
+<div class="file-panel" id="panel-setup">
+  <div class="file-header">
+    <span class="file-name">setup_steps.sh</span>
+    <button class="copy-btn" onclick="copyCode('setup')">Copy</button>
+  </div>
+  <pre id="code-setup"># ── Step 1: Enable Bedrock model access ───────────────────────────────
+# Go to AWS Console → Bedrock → Model access
+# Enable: Claude 3.5 Sonnet (anthropic.claude-3-5-sonnet-20241022-v2:0)
+
+# ── Step 2: Create your Lambda function ───────────────────────────────
+# AWS Console → Lambda → Create function
+#   Runtime: Python 3.12
+#   Architecture: x86_64
+# Paste lambda_function.py into the inline editor and Deploy
+
+# ── Step 3: Give Lambda permission to call Bedrock ────────────────────
+# In your Lambda → Configuration → Permissions → Role name (click it)
+# IAM → Add permissions → Attach policies
+# Add: AmazonBedrockFullAccess
+
+# ── Step 4: Enable a Function URL (no API Gateway needed!) ────────────
+# Lambda → Configuration → Function URL → Create function URL
+#   Auth type: NONE (public, fine for dev)
+#   CORS: Enable → Allow origin: *
+# Copy the URL — paste it into index.html as LAMBDA_URL
+
+# ── Step 5: Test it from the terminal ─────────────────────────────────
+curl -X POST YOUR_LAMBDA_FUNCTION_URL_HERE \
+  -H "Content-Type: application/json" \
+  -d '{
+    "persona": "wise_sensei",
+    "mood": "tired and stressed",
+    "goal": "stress relief",
+    "duration": 20
+  }'
+
+# ── Step 6: Open index.html in your browser ───────────────────────────
+# Just double-click it locally — no server needed for dev!
+# Later you can upload it to S3 for public hosting.</pre>
+</div>
+
+<div class="note">
+  <strong>One thing to replace:</strong> paste your Lambda Function URL into <code>index.html</code> where it says <code>YOUR_LAMBDA_FUNCTION_URL_HERE</code>.
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.file-panel').forEach(p => p.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function copyCode(name) {
+  const el = document.getElementById('code-' + name);
+  let text = el.innerText || el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+</script>

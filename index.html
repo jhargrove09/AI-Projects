@@ -1,86 +1,1120 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <title>SensAI Flow</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowku — Anime Yoga Flow Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 20px; }
-    h1 { font-size: 24px; margin-bottom: 8px; }
-    label { display: block; font-size: 13px; color: #666; margin: 16px 0 4px; }
-    select, input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
-    button { margin-top: 20px; width: 100%; padding: 12px; background: #333; color: white;
-             border: none; border-radius: 6px; font-size: 15px; cursor: pointer; }
-    button:disabled { background: #999; }
-    #output { margin-top: 24px; white-space: pre-wrap; line-height: 1.7;
-              background: #f9f9f9; padding: 20px; border-radius: 8px; font-size: 14px; }
+    :root[data-theme="dark"] {
+      --bg: #0d0d12;
+      --bg3: #1a1a24;
+      --border: rgba(255,255,255,0.07);
+      --border-hover: rgba(255,255,255,0.15);
+      --text: #f0eee8;
+      --text-muted: #7a7890;
+      --text-dim: #4a4860;
+      --accent: #c9a96e;
+      --accent2: #7c6fc4;
+      --accent-glow: rgba(201,169,110,0.15);
+      --accent2-glow: rgba(124,111,196,0.15);
+      --card: #13131a;
+      --card2: #1a1a24;
+      --input-bg: #0d0d12;
+      --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      --phase-warm: #c97a3a;
+      --phase-main: #7c6fc4;
+      --phase-cool: #3a8fa8;
+      --phase-final: #7a9c5a;
+      --timer-track: rgba(255,255,255,0.06);
+    }
+    :root[data-theme="light"] {
+      --bg: #f5f2eb;
+      --bg3: #ffffff;
+      --border: rgba(0,0,0,0.08);
+      --border-hover: rgba(0,0,0,0.18);
+      --text: #1a1820;
+      --text-muted: #6b6880;
+      --text-dim: #a8a5b8;
+      --accent: #9a6f2e;
+      --accent2: #5046a0;
+      --accent-glow: rgba(154,111,46,0.1);
+      --accent2-glow: rgba(80,70,160,0.1);
+      --card: #ffffff;
+      --card2: #f5f2eb;
+      --input-bg: #f5f2eb;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+      --phase-warm: #b86a2a;
+      --phase-main: #5046a0;
+      --phase-cool: #2a7a94;
+      --phase-final: #5a8a3a;
+      --timer-track: rgba(0,0,0,0.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle at 20% 20%, var(--accent-glow) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, var(--accent2-glow) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 32px 0 48px;
+    }
+
+    .logo { display: flex; flex-direction: column; gap: 2px; }
+    .logo-name {
+      font-family: 'Cinzel', serif;
+      font-size: 28px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      line-height: 1;
+    }
+    .logo-sub {
+      font-size: 11px;
+      font-weight: 300;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .header-right { display: flex; gap: 10px; align-items: center; }
+
+    .theme-toggle {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .theme-toggle:hover { border-color: var(--border-hover); color: var(--text); }
+
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+    }
+    .divider-line { flex: 1; height: 1px; background: var(--border); }
+    .divider-text { font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; color: var(--text-dim); }
+
+    .form-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    .persona-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 28px; }
+
+    .persona-card {
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: left;
+    }
+    .persona-card:hover { border-color: var(--border-hover); transform: translateY(-1px); }
+    .persona-card.selected { border-color: var(--accent); background: var(--accent-glow); }
+    .persona-card.selected .persona-name { color: var(--accent); }
+    .persona-emoji { font-size: 20px; margin-bottom: 6px; display: block; }
+    .persona-name { font-size: 13px; font-weight: 500; color: var(--text); display: block; margin-bottom: 2px; }
+    .persona-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+    .field { margin-bottom: 22px; }
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--accent); }
+    .field input::placeholder { color: var(--text-dim); }
+    .select-wrap { position: relative; }
+    .select-wrap::after {
+      content: '↓';
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 12px;
+      pointer-events: none;
+    }
+
+    .duration-pills { display: flex; gap: 8px; }
+    .pill {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text-muted);
+      transition: all 0.2s;
+    }
+    .pill:hover { border-color: var(--border-hover); color: var(--text); }
+    .pill.selected { border-color: var(--accent); color: var(--accent); background: var(--accent-glow); }
+
+    .btn-generate {
+      width: 100%;
+      padding: 16px;
+      background: var(--accent);
+      border: none;
+      border-radius: 12px;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+    .btn-generate:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(201,169,110,0.3); }
+    .btn-generate:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .loading-dots span { display: inline-block; animation: blink 1.2s infinite; }
+    .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes blink { 0%,80%,100%{opacity:0} 40%{opacity:1} }
+
+    .section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── GUIDED SESSION ── */
+    #session-view { display: none; }
+    #session-view.active { display: block; }
+    #form-view.hidden { display: none; }
+
+    .session-progress {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+      padding: 14px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .progress-label { font-size: 12px; color: var(--text-muted); }
+    .progress-dots { display: flex; gap: 6px; }
+    .progress-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--border-hover);
+      transition: all 0.3s;
+    }
+    .progress-dot.active { background: var(--accent); transform: scale(1.2); }
+    .progress-dot.done { background: var(--text-dim); }
+    .btn-exit {
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+    }
+    .btn-exit:hover { border-color: var(--border-hover); color: var(--text); }
+
+    /* Slide */
+    .slide {
+      animation: fadeIn 0.5s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide.fade-out {
+      animation: fadeOut 0.4s ease both;
+    }
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(-20px); }
+    }
+
+    /* Phase banner */
+    .phase-banner {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .phase-banner-number {
+      font-size: 12px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+    .phase-banner-title {
+      font-family: 'Cinzel', serif;
+      font-size: 36px;
+      font-weight: 900;
+      margin-bottom: 12px;
+    }
+    .phase-banner-sub { font-size: 14px; color: var(--text-muted); }
+    .phase-warmup-color { color: var(--phase-warm); }
+    .phase-main-color { color: var(--phase-main); }
+    .phase-cooldown-color { color: var(--phase-cool); }
+    .phase-final-color { color: var(--phase-final); }
+
+    /* Pose card */
+    .pose-slide {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      box-shadow: var(--shadow);
+    }
+    .pose-slide-phase {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+    }
+
+    .pose-image-wrap {
+      width: 100%;
+      height: 220px;
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--card2);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .pose-image-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: opacity 0.4s;
+    }
+    .pose-image-placeholder {
+      font-size: 48px;
+      opacity: 0.3;
+    }
+    .pose-image-credit {
+      position: absolute;
+      bottom: 6px;
+      right: 8px;
+      font-size: 9px;
+      color: rgba(255,255,255,0.5);
+      background: rgba(0,0,0,0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .pose-slide-name {
+      font-family: 'Cinzel', serif;
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.2;
+    }
+    .pose-slide-sanskrit {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-style: italic;
+      margin-bottom: 28px;
+    }
+
+    .pose-info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .pose-info-box {
+      background: var(--card2);
+      border-radius: 12px;
+      padding: 14px 16px;
+    }
+    .pose-info-label {
+      font-size: 10px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin-bottom: 6px;
+    }
+    .pose-info-value { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+
+    /* Timer */
+    .timer-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0;
+    }
+    .timer-ring-wrap {
+      position: relative;
+      width: 160px;
+      height: 160px;
+      margin-bottom: 24px;
+    }
+    .timer-ring-wrap svg {
+      transform: rotate(-90deg);
+      width: 160px;
+      height: 160px;
+    }
+    .timer-track { fill: none; stroke: var(--timer-track); stroke-width: 8; }
+    .timer-progress {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 1s linear;
+    }
+    .timer-progress.flash {
+      animation: timerFlash 0.5s ease 3;
+    }
+    @keyframes timerFlash {
+      0%,100% { stroke: var(--accent); }
+      50% { stroke: #ff6b6b; }
+    }
+    .timer-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-digits {
+      font-family: 'Cinzel', serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .timer-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.1em; margin-top: 4px; }
+
+    .btn-begin {
+      padding: 14px 48px;
+      background: var(--accent);
+      border: none;
+      border-radius: 100px;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-begin:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,169,110,0.35); }
+
+    .btn-skip {
+      display: none;
+      margin-top: 14px;
+      padding: 8px 28px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-skip:hover { border-color: var(--border-hover); color: var(--text); }
+    .btn-skip.visible { display: inline-block; }
+
+    /* Sensei says */
+    .sensei-slide {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 20px;
+      padding: 40px 36px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .sensei-emoji { font-size: 40px; margin-bottom: 20px; display: block; }
+    .sensei-label {
+      font-size: 10px;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .sensei-quote {
+      font-size: 17px;
+      line-height: 1.8;
+      color: var(--text);
+      font-style: italic;
+      margin-bottom: 32px;
+    }
+    .btn-continue {
+      padding: 14px 48px;
+      background: var(--accent);
+      border: none;
+      border-radius: 100px;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-continue:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,169,110,0.35); }
+
+    /* Closing */
+    .closing-slide {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 60px 36px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .closing-emoji { font-size: 48px; margin-bottom: 20px; display: block; }
+    .closing-title {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .closing-text { font-size: 15px; line-height: 1.8; color: var(--text-muted); font-style: italic; margin-bottom: 36px; }
+    .btn-restart {
+      padding: 14px 48px;
+      background: none;
+      border: 1px solid var(--accent);
+      border-radius: 100px;
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-restart:hover { background: var(--accent-glow); transform: translateY(-2px); }
+
+    /* Sakura */
+    .sakura {
+      position: fixed; top: -20px;
+      animation: fall linear infinite;
+      pointer-events: none; z-index: 999; opacity: 0.5;
+    }
+    @keyframes fall {
+      0% { transform: translateY(-20px) rotate(0deg); opacity: 0.5; }
+      100% { transform: translateY(110vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Flash overlay */
+    .flash-overlay {
+      position: fixed; inset: 0;
+      background: rgba(201,169,110,0.15);
+      pointer-events: none;
+      z-index: 998;
+      opacity: 0;
+      transition: opacity 0.1s;
+    }
+    .flash-overlay.flash { animation: screenFlash 0.6s ease 3; }
+    @keyframes screenFlash {
+      0%,100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
   </style>
 </head>
 <body>
-  <h1>🌸 SensAI Flow</h1>
-  <p>Your anime yoga guide awaits.</p>
 
-  <label>Choose your sensei</label>
-  <select id="persona">
-    <option value="wise_sensei">Wise Sensei</option>
-    <option value="hype_coach">Hype Coach</option>
-    <option value="mysterious_guide">Mysterious Guide</option>
-    <option value="gentle_healer">Gentle Healer</option>
-  </select>
+<div class="flash-overlay" id="flash-overlay"></div>
 
-  <label>How are you feeling right now?</label>
-  <input id="mood" type="text" placeholder="e.g. tired, anxious, energized, stiff..." />
+<div class="container">
+  <header>
+    <div class="logo">
+      <span class="logo-name">Flowku</span>
+      <span class="logo-sub">Anime Yoga Flow Generator</span>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">☀️</span>
+        <span id="theme-label">Light</span>
+      </button>
+    </div>
+  </header>
 
-  <label>Session goal</label>
-  <select id="goal">
-    <option>stress relief</option>
-    <option>flexibility</option>
-    <option>morning wake-up</option>
-    <option>bedtime wind-down</option>
-    <option>strength and balance</option>
-  </select>
+  <!-- FORM VIEW -->
+  <div id="form-view">
+    <div class="form-card">
+      <div class="section-title">Choose your sensei</div>
+      <div class="persona-grid">
+        <div class="persona-card selected" onclick="selectPersona(this, 'wise_sensei')">
+          <span class="persona-emoji">🌿</span>
+          <span class="persona-name">Wise Sensei</span>
+          <span class="persona-desc">Calm, philosophical, gently funny</span>
+        </div>
+        <div class="persona-card" onclick="selectPersona(this, 'hype_coach')">
+          <span class="persona-emoji">🔥</span>
+          <span class="persona-name">Hype Coach</span>
+          <span class="persona-desc">Every pose is a power-up. PLUS ULTRA.</span>
+        </div>
+        <div class="persona-card" onclick="selectPersona(this, 'mysterious_guide')">
+          <span class="persona-emoji">🌙</span>
+          <span class="persona-name">Mysterious Guide</span>
+          <span class="persona-desc">Cryptic. Cool. Kakashi energy.</span>
+        </div>
+        <div class="persona-card" onclick="selectPersona(this, 'gentle_healer')">
+          <span class="persona-emoji">🌸</span>
+          <span class="persona-name">Gentle Healer</span>
+          <span class="persona-desc">Soft, nurturing, wholesome chaos.</span>
+        </div>
+      </div>
 
-  <label>Duration (minutes)</label>
-  <select id="duration">
-    <option value="15">15 min</option>
-    <option value="30" selected>30 min</option>
-    <option value="45">45 min</option>
-  </select>
+      <div class="divider">
+        <div class="divider-line"></div>
+        <div class="divider-text">Your session</div>
+        <div class="divider-line"></div>
+      </div>
 
-  <button id="btn" onclick="generateFlow()">Generate My Flow ✨</button>
-  <div id="output"></div>
+      <div class="field">
+        <label>How are you feeling right now?</label>
+        <input type="text" id="mood" placeholder="e.g. tired, anxious, energized, stiff..." />
+      </div>
 
-  <script>
-    const LAMBDA_URL = "https://b75y4mej5dxirs72mpu2zki5pu0pvcza.lambda-url.us-east-1.on.aws/";
+      <div class="field">
+        <label>Session goal</label>
+        <div class="select-wrap">
+          <select id="goal">
+            <option value="stress relief">Stress relief</option>
+            <option value="flexibility">Flexibility</option>
+            <option value="morning wake-up">Morning wake-up</option>
+            <option value="bedtime wind-down">Bedtime wind-down</option>
+            <option value="strength and balance">Strength and balance</option>
+          </select>
+        </div>
+      </div>
 
-    async function generateFlow() {
-      const btn = document.getElementById("btn");
-      const output = document.getElementById("output");
-      btn.disabled = true;
-      btn.textContent = "Summoning your sensei...";
-      output.textContent = "";
+      <div class="field">
+        <label>Duration</label>
+        <div class="duration-pills">
+          <div class="pill" onclick="selectDuration(this, 15)">15 min</div>
+          <div class="pill selected" onclick="selectDuration(this, 30)">30 min</div>
+          <div class="pill" onclick="selectDuration(this, 45)">45 min</div>
+        </div>
+      </div>
 
-      const payload = {
-        persona:  document.getElementById("persona").value,
-        mood:     document.getElementById("mood").value || "neutral",
-        goal:     document.getElementById("goal").value,
-        duration: document.getElementById("duration").value,
-      };
+      <button class="btn-generate" id="btn" onclick="generateFlow()">
+        Generate My Flow ✦
+      </button>
+    </div>
+  </div>
 
-      try {
-        const res = await fetch(LAMBDA_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await res.json();
-        output.textContent = data.flow || data.error;
-      } catch (err) {
-        output.textContent = "Error: " + err.message;
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Generate My Flow ✨";
+  <!-- SESSION VIEW -->
+  <div id="session-view">
+    <div class="session-progress">
+      <span class="progress-label" id="progress-label">Pose 1 of 10</span>
+      <div class="progress-dots" id="progress-dots"></div>
+      <button class="btn-exit" onclick="exitSession()">✕ Exit</button>
+    </div>
+    <div id="slide-container"></div>
+  </div>
+</div>
+
+<script>
+  const LAMBDA_URL = "https://b75y4mej5dxirs72mpu2zki5pu0pvcza.lambda-url.us-east-1.on.aws/";
+  const PEXELS_KEY = "cxKUVLz5wB0yWe1M1MYyzNhpklGllfWjAVawlxh8msxjhzFXheAiYoAG";
+  const poseImageCache = {};
+
+  async function fetchPoseImage(poseName) {
+    if (poseImageCache[poseName]) return poseImageCache[poseName];
+    try {
+      const query = encodeURIComponent(`black woman yoga ${poseName}`);
+      const res = await fetch(`https://api.pexels.com/v1/search?query=${query}&per_page=1&orientation=square`, {
+        headers: { Authorization: PEXELS_KEY }
+      });
+      const data = await res.json();
+      const url = data.photos?.[0]?.src?.medium || null;
+      poseImageCache[poseName] = url;
+      return url;
+    } catch { return null; }
+  }
+
+  let selectedPersona = "wise_sensei";
+  let selectedDuration = 30;
+  let sessionSteps = [];
+  let currentStep = 0;
+  let timerInterval = null;
+  let timerRemaining = 0;
+  let chimeCtx = null;
+
+  const personaNames = { wise_sensei:"🌿 Wise Sensei", hype_coach:"🔥 Hype Coach", mysterious_guide:"🌙 Mysterious Guide", gentle_healer:"🌸 Gentle Healer" };
+  const personaEmoji = { wise_sensei:"🌿", hype_coach:"🔥", mysterious_guide:"🌙", gentle_healer:"🌸" };
+  const loadingMessages = { wise_sensei:"Consulting the ancient scrolls", hype_coach:"POWERING UP YOUR TRAINING ARC", mysterious_guide:"The sensei stirs in the shadows", gentle_healer:"Preparing a warm flow just for you" };
+  const phaseConfig = {
+    warm:    { cls:"phase-warmup-color",   num:"Phase 1", label:"Warm-Up",           color:"var(--phase-warm)" },
+    main:    { cls:"phase-main-color",     num:"Phase 2", label:"Main Flow",          color:"var(--phase-main)" },
+    cool:    { cls:"phase-cooldown-color", num:"Phase 3", label:"Cool-Down",          color:"var(--phase-cool)" },
+    final:   { cls:"phase-final-color",    num:"Phase 4", label:"Final Relaxation",   color:"var(--phase-final)" },
+    relax:   { cls:"phase-final-color",    num:"Phase 4", label:"Final Relaxation",   color:"var(--phase-final)" },
+    savasana:{ cls:"phase-final-color",    num:"Phase 4", label:"Final Relaxation",   color:"var(--phase-final)" },
+  };
+
+  function selectPersona(el, value) {
+    document.querySelectorAll('.persona-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedPersona = value;
+  }
+
+  function selectDuration(el, value) {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('selected'));
+    el.classList.add('selected');
+    selectedDuration = value;
+  }
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    document.getElementById('theme-icon').textContent = isDark ? '🌙' : '☀️';
+    document.getElementById('theme-label').textContent = isDark ? 'Dark' : 'Light';
+  }
+
+  // Chime using Web Audio API
+  function playChime() {
+    try {
+      if (!chimeCtx) chimeCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+      notes.forEach((freq, i) => {
+        const osc = chimeCtx.createOscillator();
+        const gain = chimeCtx.createGain();
+        osc.connect(gain);
+        gain.connect(chimeCtx.destination);
+        osc.frequency.value = freq;
+        osc.type = 'sine';
+        const t = chimeCtx.currentTime + i * 0.18;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.3, t + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+        osc.start(t);
+        osc.stop(t + 0.8);
+      });
+    } catch(e) { console.log('Audio not available'); }
+  }
+
+  function flashScreen() {
+    const overlay = document.getElementById('flash-overlay');
+    overlay.classList.remove('flash');
+    void overlay.offsetWidth;
+    overlay.classList.add('flash');
+    setTimeout(() => overlay.classList.remove('flash'), 2000);
+  }
+
+  function spawnSakura() {
+    const petals = ['🌸','🌺','✿','❀'];
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => {
+        const el = document.createElement('div');
+        el.className = 'sakura';
+        el.textContent = petals[Math.floor(Math.random() * petals.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.animationDuration = (4 + Math.random() * 4) + 's';
+        el.style.animationDelay = (Math.random() * 2) + 's';
+        el.style.fontSize = (12 + Math.random() * 10) + 'px';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 9000);
+      }, i * 120);
+    }
+  }
+
+  // Parse flow text into session steps
+  function parseFlowToSteps(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+    const steps = [];
+    let currentPhase = null;
+    let openingLines = [], closingLines = [];
+    let state = 'opening';
+    let currentPose = null;
+    let poses = [];
+
+    function cleanLine(l) { return l.replace(/^#+\s*/,'').replace(/\*\*/g,'').replace(/\*/g,'').trim(); }
+    function isHeading(l) { return /^#{1,4}\s/.test(l); }
+    function detectPhase(l) {
+      const lower = cleanLine(l).toLowerCase();
+      for (const [key, val] of Object.entries(phaseConfig)) {
+        if (lower.includes(key)) return val;
+      }
+      return null;
+    }
+
+    function flushPose() {
+      if (!currentPose) return;
+      let english = currentPose.name.replace(/^\d+\.\s*/,'').trim();
+      let sanskrit = '';
+      const parenM = english.match(/\(([^)]+)\)/);
+      const pipeM = english.match(/\|(.+)/);
+      if (parenM) { sanskrit = parenM[1]; english = english.replace(parenM[0],'').trim(); }
+      else if (pipeM) { sanskrit = pipeM[1].trim(); english = english.split('|')[0].trim(); }
+
+      let duration = 60, durationText = '', breathing = '', note = '';
+      for (const l of currentPose.lines) {
+        const lo = l.toLowerCase();
+        const val = l.replace(/^[-*•]\s*/,'').replace(/\*\*/g,'').replace(/^[^:]+:\s*/,'').trim();
+        if (lo.includes('duration') || lo.match(/\d+\s*(min|sec)/)) {
+          if (!durationText) {
+            durationText = val;
+            const secM = val.match(/(\d+)\s*sec/i);
+            const minM = val.match(/(\d+)\s*min/i);
+            if (secM) duration = parseInt(secM[1]);
+            else if (minM) duration = parseInt(minM[1]) * 60;
+          }
+        }
+        else if (lo.includes('breath') || lo.includes('inhale') || lo.includes('exhale')) { if (!breathing) breathing = val; }
+        else if (lo.includes('hype') || lo.includes('note') || lo.includes('sensei') || lo.includes('motivat')) { if (!note) note = val; }
+        else if (!note && val.length > 20) note = val;
+      }
+
+      poses.push({ type:'pose', english, sanskrit, duration, durationText, breathing, note, phase: currentPhase });
+      currentPose = null;
+    }
+
+    for (const line of lines) {
+      const clean = cleanLine(line);
+      const lower = clean.toLowerCase();
+      const phase = isHeading(line) ? detectPhase(line) : null;
+
+      if (lower.includes('closing message') || lower.includes('closing:')) {
+        flushPose();
+        state = 'closing'; continue;
+      }
+      if (phase) {
+        flushPose();
+        if (currentPhase && poses.length > 0) {
+          steps.push({ type:'phase', phase: currentPhase });
+          steps.push(...poses);
+          poses = [];
+        } else if (poses.length > 0) {
+          steps.push(...poses);
+          poses = [];
+        }
+        currentPhase = phase;
+        state = 'phase'; continue;
+      }
+      if (state === 'opening' && !isHeading(line) && clean) { openingLines.push(clean); }
+      else if (state === 'closing' && !isHeading(line) && clean) { closingLines.push(clean); }
+      else if (state === 'phase') {
+        if (isHeading(line) && !detectPhase(line)) {
+          flushPose();
+          currentPose = { name: clean, lines: [] };
+        } else if (currentPose) {
+          currentPose.lines.push(clean);
+        }
       }
     }
-  </script>
+    flushPose();
+    if (currentPhase && poses.length > 0) {
+      steps.push({ type:'phase', phase: currentPhase });
+      steps.push(...poses);
+    }
+
+    // Add opening + closing
+    const allSteps = [];
+    if (openingLines.length > 0) allSteps.push({ type:'opening', text: openingLines.join(' ') });
+    allSteps.push(...steps);
+    if (closingLines.length > 0) allSteps.push({ type:'closing', text: closingLines.join(' ') });
+    return allSteps;
+  }
+
+  function getPoseSteps(steps) { return steps.filter(s => s.type === 'pose'); }
+
+  function updateProgress(steps, currentIdx) {
+    const poses = getPoseSteps(steps);
+    const poseSteps = steps.filter((s,i) => s.type === 'pose' && i <= currentIdx);
+    const poseNum = poseSteps.length;
+    const totalPoses = poses.length;
+    document.getElementById('progress-label').textContent = `Pose ${poseNum} of ${totalPoses}`;
+    const dotsEl = document.getElementById('progress-dots');
+    dotsEl.innerHTML = '';
+    poses.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'progress-dot' + (i < poseNum ? ' done' : i === poseNum - 1 ? ' active' : '');
+      dotsEl.appendChild(dot);
+    });
+  }
+
+  function transitionTo(fn) {
+    const container = document.getElementById('slide-container');
+    const existing = container.querySelector('.slide');
+    if (existing) {
+      existing.classList.add('fade-out');
+      setTimeout(() => { container.innerHTML = ''; fn(); }, 400);
+    } else {
+      fn();
+    }
+  }
+
+  function showStep(index) {
+    currentStep = index;
+    if (index >= sessionSteps.length) { showClosingFallback(); return; }
+    const step = sessionSteps[index];
+    updateProgress(sessionSteps, index);
+
+    transitionTo(() => {
+      if (step.type === 'opening') showOpening(step);
+      else if (step.type === 'phase') showPhaseBanner(step, index);
+      else if (step.type === 'pose') showPoseCard(step, index);
+      else if (step.type === 'closing') showClosing(step);
+    });
+  }
+
+  function showOpening(step) {
+    const container = document.getElementById('slide-container');
+    container.innerHTML = `<div class="slide sensei-slide">
+      <span class="sensei-emoji">${personaEmoji[selectedPersona]}</span>
+      <div class="sensei-label">${personaNames[selectedPersona]}</div>
+      <div class="sensei-quote">${step.text}</div>
+      <button class="btn-continue" onclick="showStep(${currentStep + 1})">Begin Session ✦</button>
+    </div>`;
+  }
+
+  function showPhaseBanner(step, index) {
+    const container = document.getElementById('slide-container');
+    container.innerHTML = `<div class="slide phase-banner">
+      <div class="phase-banner-number">${step.phase.num}</div>
+      <div class="phase-banner-title ${step.phase.cls}">${step.phase.label}</div>
+      <div class="phase-banner-sub">Get ready for the next sequence</div>
+    </div>`;
+    setTimeout(() => showStep(index + 1), 3000);
+  }
+
+  async function showPoseCard(step, index) {
+    const container = document.getElementById('slide-container');
+    const circumference = 2 * Math.PI * 54;
+    container.innerHTML = `<div class="slide">
+      <div class="pose-slide">
+        <div class="pose-slide-phase">${step.phase ? step.phase.label : ''}</div>
+        <div class="pose-image-wrap" id="pose-img-wrap">
+          <div class="pose-image-placeholder">🧘</div>
+        </div>
+        <div class="pose-slide-name">${step.english}</div>
+        ${step.sanskrit ? `<div class="pose-slide-sanskrit">${step.sanskrit}</div>` : ''}
+        <div class="pose-info-grid">
+          ${step.durationText ? `<div class="pose-info-box">
+            <div class="pose-info-label">Duration</div>
+            <div class="pose-info-value">${step.durationText}</div>
+          </div>` : ''}
+          ${step.breathing ? `<div class="pose-info-box">
+            <div class="pose-info-label">Breathing</div>
+            <div class="pose-info-value">${step.breathing}</div>
+          </div>` : ''}
+        </div>
+        <div class="timer-section">
+          <div class="timer-ring-wrap">
+            <svg viewBox="0 0 120 120">
+              <circle class="timer-track" cx="60" cy="60" r="54"/>
+              <circle class="timer-progress" id="timer-ring" cx="60" cy="60" r="54"
+                stroke-dasharray="${circumference}"
+                stroke-dashoffset="0"/>
+            </svg>
+            <div class="timer-center">
+              <div class="timer-digits" id="timer-digits">${formatTime(step.duration)}</div>
+              <div class="timer-label">remaining</div>
+            </div>
+          </div>
+          <button class="btn-begin" id="begin-btn" onclick="startTimer(${step.duration}, ${index})">Begin ✦</button>
+          <button class="btn-skip" id="skip-btn" onclick="skipPose(${index})">Skip this pose →</button>
+        </div>
+      </div>
+    </div>`;
+
+    // Fetch image in background and swap in when ready
+    fetchPoseImage(step.english).then(url => {
+      const wrap = document.getElementById('pose-img-wrap');
+      if (wrap && url) {
+        wrap.innerHTML = `<img src="${url}" alt="${step.english}" loading="lazy"/>
+          <div class="pose-image-credit">Photo: Pexels</div>`;
+      }
+    });
+  }
+
+  function formatTime(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}:${s.toString().padStart(2,'0')}` : `${s}`;
+  }
+
+  function startTimer(totalSeconds, poseIndex) {
+    if (timerInterval) clearInterval(timerInterval);
+    document.getElementById('begin-btn').style.display = 'none';
+    const skipBtn = document.getElementById('skip-btn');
+    if (skipBtn) skipBtn.classList.add('visible');
+    timerRemaining = totalSeconds;
+    const circumference = 2 * Math.PI * 54;
+    const ring = document.getElementById('timer-ring');
+    const digits = document.getElementById('timer-digits');
+
+    timerInterval = setInterval(() => {
+      timerRemaining--;
+      if (digits) digits.textContent = formatTime(timerRemaining);
+      if (ring) {
+        const progress = timerRemaining / totalSeconds;
+        ring.style.strokeDashoffset = circumference * (1 - progress);
+      }
+      if (timerRemaining <= 0) {
+        clearInterval(timerInterval);
+        playChime();
+        flashScreen();
+        if (ring) ring.classList.add('flash');
+        setTimeout(() => showSenseiSays(sessionSteps[poseIndex], poseIndex), 800);
+      }
+    }, 1000);
+  }
+
+  function showSenseiSays(step, poseIndex) {
+    const nextIndex = poseIndex + 1;
+    const isLast = nextIndex >= sessionSteps.length || sessionSteps[nextIndex].type === 'closing';
+    const btnLabel = isLast ? 'Finish Session ✦' : 'Next Pose ✦';
+
+    transitionTo(() => {
+      const container = document.getElementById('slide-container');
+      container.innerHTML = `<div class="slide sensei-slide">
+        <span class="sensei-emoji">${personaEmoji[selectedPersona]}</span>
+        <div class="sensei-label">Sensei says</div>
+        <div class="sensei-quote">${step.note || 'Well done. You are growing stronger with every breath.'}</div>
+        <button class="btn-continue" onclick="showStep(${nextIndex})">${btnLabel}</button>
+      </div>`;
+    });
+  }
+
+  function showClosing(step) {
+    spawnSakura();
+    const container = document.getElementById('slide-container');
+    container.innerHTML = `<div class="slide closing-slide">
+      <span class="closing-emoji">${personaEmoji[selectedPersona]}</span>
+      <div class="closing-title">Session Complete</div>
+      <div class="closing-text">${step.text || 'You did it. The training arc is complete.'}</div>
+      <button class="btn-restart" onclick="exitSession()">New Session ✦</button>
+    </div>`;
+    document.getElementById('progress-label').textContent = 'Complete! 🌸';
+  }
+
+  function showClosingFallback() {
+    spawnSakura();
+    const container = document.getElementById('slide-container');
+    container.innerHTML = `<div class="slide closing-slide">
+      <span class="closing-emoji">${personaEmoji[selectedPersona]}</span>
+      <div class="closing-title">Session Complete</div>
+      <div class="closing-text">You have completed your flow. Well done, warrior.</div>
+      <button class="btn-restart" onclick="exitSession()">New Session ✦</button>
+    </div>`;
+  }
+
+  function skipPose(poseIndex) {
+    if (timerInterval) clearInterval(timerInterval);
+    showSenseiSays(sessionSteps[poseIndex], poseIndex);
+  }
+
+  function exitSession() {
+    if (timerInterval) clearInterval(timerInterval);
+    document.getElementById('session-view').classList.remove('active');
+    document.getElementById('form-view').classList.remove('hidden');
+    document.getElementById('slide-container').innerHTML = '';
+    sessionSteps = [];
+  }
+
+  async function generateFlow() {
+    const btn = document.getElementById("btn");
+    const mood = document.getElementById("mood").value || "neutral";
+    const goal = document.getElementById("goal").value;
+
+    btn.disabled = true;
+    btn.innerHTML = `<span class="loading-dots">${loadingMessages[selectedPersona]} <span>.</span><span>.</span><span>.</span></span>`;
+
+    try {
+      const res = await fetch(LAMBDA_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ persona: selectedPersona, mood, goal, duration: selectedDuration }),
+      });
+      const data = await res.json();
+
+      if (data.flow) {
+        sessionSteps = parseFlowToSteps(data.flow);
+        document.getElementById('form-view').classList.add('hidden');
+        document.getElementById('session-view').classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showStep(0);
+      } else {
+        alert('Error: ' + (data.error || 'Something went wrong.'));
+      }
+    } catch (err) {
+      alert('Error: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = "Generate My Flow ✦";
+    }
+  }
+</script>
 </body>
 </html>
